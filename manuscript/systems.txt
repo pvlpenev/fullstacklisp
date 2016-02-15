@@ -1,0 +1,148 @@
+# Chapter 2: Lisp libraries
+
+In this chapter we'll introduce the ASDF build system, Quicklisp the Lisp package manager as well as several commonly used libraries you should know about.
+
+## ASDF: Another System Definition Facility
+
+Lisp code is organized in something called a system. A system is a directory containing all of your source code and a system definition file(with the `.asd` extension) which tells ASDF how to build and load your project. Almost all modern lisp projects use it. 
+
+Let's look at a very minimal ASDF project to get an idea of what we're talking about:
+
+~~~~~~~~
+example-project/
+  README.md
+  example-project.asd
+  src/
+    example-project.lisp
+~~~~~~~~
+
+In the `example-project` directory there are several files, the `README.md` is self-explanatory. The `src` directory contains all of our source files and the example-project.asd tells lisp how to build it. Let's take a look inside
+
+{title="example-project.asd", lang="common-lisp"}
+~~~~~~~~
+(in-package :cl-user)
+(defpackage example-project-asd
+  (:use :cl :asdf))
+(in-package :example-project-asd)
+
+(defsystem example-project
+  :version "0.1"
+  :author "Pavel Penev"
+  :mailto "example@test.com"
+  :license "MIT"
+  :depends-on (:iterate :alexandria)
+  :components ((:module "src"
+                :components
+                ((:file "example-project"))))
+  :description "Example project")
+~~~~~~~~
+
+As you can see this is just ordinary lisp code. Let's look at the `defsystem` form in more detail, it defines information about the project such as it's version, author, license, etc. The interesting parts are `:depends-on` and `:components`. The `:depends-on` clause lists the libraries our project depends on, obviously, and the components tells where to find the source code, in this case the file `example-project`(note it is written without the `.lisp` extension) in the `src` directory. More complicated set-ups exist and we'll look at them in time. For now this will suffice. In the next section we'll take a look at Quicklisp and how we can load such systems into Lisp.
+
+## Quicklisp
+
+Quicklisp is a package manager for lisp. It handles downloading and installation of lisp code. If you're using roswell it's already installed on your system. Let's try it out, Open a lisp repl with `ros run` and type the following to install the alexandria(a collection of useful utilities) library:
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (ql:quickload "alexandria") 
+ => ("alexandria")
+~~~~~~~~
+
+Alexandria includes a function which takes a nested list and "flattens it" into a non-nested one, let's see if we installed alexandria by trying it out
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (alexandria:flatten '((1 2) (3 4) (5 6)))
+ => (1 2 3 4 5 6)
+~~~~~~~~
+
+Here are some other useful Quicklisp commands:
+
+`ql:system-apropos` takes a string and searches the names of available systems with it, for example if we search for "json" we get:
+
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (ql:system-apropos "json")
+=> #<SYSTEM cl-json / cl-json-20141217-git / quicklisp 2016-02-08>
+   #<SYSTEM cl-json.test / cl-json-20141217-git / quicklisp 2016-02-08>
+   #<SYSTEM com.gigamonkeys.json / monkeylib-json-20120208-git / quicklisp 2016-02-08>
+   #<SYSTEM define-json-expander / define-json-expander-20140713-git / quicklisp 2016-02-08>
+   #<SYSTEM graph-json / graph-20150407-git / quicklisp 2016-02-08>
+   #<SYSTEM json-responses / json-responses-20151031-hg / quicklisp 2016-02-08>
+   #<SYSTEM json-responses-test / json-responses-20151031-hg / quicklisp 2016-02-08>
+   #<SYSTEM json-streams / json-streams-20140713-git / quicklisp 2016-02-08>
+   #<SYSTEM json-streams-tests / json-streams-20140713-git / quicklisp 2016-02-08>
+   #<SYSTEM json-template / cl-json-template-20110418-hg / quicklisp 2016-02-08>
+   #<SYSTEM st-json / st-json-20150608-git / quicklisp 2016-02-08>
+~~~~~~~~
+
+All of these systems can be loaded with `ql:quickload`. 
+
+The function `ql:update-client` will update your installation of Quicklisp.
+
+Quicklisp libraries are usually updated once a month, occasionally you'll have to run `(ql:update-all-dists)` to get the newest versions. 
+
+The function `ql:uninstall` can be used to remove an installed system.
+
+That about covers the basic Quicklisp usage.
+
+## Local projects
+
+Quicklisp isn't only useful for installing remote libraries. It can also be used to load local ASDF systems. By default when you use `ql:quickload` Quicklisp searches the directories defined in the variable `ql:*local-project-directories*` for systems with the name you want to install, if they are not found there it tries to download them off the internet. If you use roswell among these directories will be `~/.roswell/local-projects`. This is where you can put your lisp code if you want it to be `quickload`-able. 
+
+TBW about `asdf:*central-registry*`
+
+## Project generators
+
+TBW
+
+## Commonly used libraries
+
+Below are a number of commonly used libraries and tools for Common Lisp. Some of them you might find useful, but mostly you should familiarize yourself with them, since you are likely to have to read code that uses them.
+
+### Quickdocs
+
+[Quickdocs](http://quickdocs.org/) is a website that contains documentation for a vast majority of active Lisp projects. You can browse it to find interesting libraries. 
+
+### Alexandria
+
+[Website](https://common-lisp.net/project/alexandria/) [API](https://common-lisp.net/project/alexandria/draft/alexandria.html)
+
+Alexandria is possibly the most popular Lisp library. It's conservative collection of utilities meant to be portable across implementations. Quickdocs reports that 289 projects in Quicklisp use it. You will have to read code that uses it fairly often and it's way too useful not to know. I highly recommend reading it's documentation and becoming familiar with it. Here's some of the stuff in it:
+
+* Hash table utilities
+* Data and Control Flow
+* Utilities to work with cons cell based data structures
+* Sequence utilities
+* Utilities to read files into strings or vectors
+* Macro writing utilities
+* Utilities for dealing with Symbols, Arrays, Types and Numbers
+
+### SPLIT-SEQUENCE
+
+[API](http://quickdocs.org/split-sequence/)
+
+The split-sequence library is very simple. It contains only 3 functions: split-sequence, split-sequence-if and split-sequence-if-not. Like alexandria, it's very commonly used.
+
+
+### Iterate
+
+[Website](https://common-lisp.net/project/iterate/) [API](https://common-lisp.net/project/iterate/doc/index.html)
+
+iterate is an iteration construct similar to the built in loop, but arguably better. It's very popular and even if you don't use it yourself you'll find yourself reading code that uses it very often, so it would be valuable if you get at least a basic understanding of its syntax.
+
+### Bordeaux-threads
+
+[Website](https://common-lisp.net/project/bordeaux-threads/) [API](https://trac.common-lisp.net/bordeaux-threads/wiki/ApiDocumentation)
+
+Bordeaux-threads is a portable threading library for CL. Although the standard doesn't say anything about threads, most Lisp implementations provide them, unfortunately all hove minor differences. BT takes care of the problem by providing a common interface. If you do anything with threads, this library is a must. 
+
+### Other useful library lists
+
+cliki.net has a list of [currently recommended libraries](http://cliki.net/Current%20recommended%20libraries)
+
+There is also Fernando Borretti's opinionated [CL State of the Union](http://eudoxia.me/article/common-lisp-sotu-2015/) article which lists some recommendations
+
+Finally you can look at Quicklisp download statistics to get an idea of what are some other commonly used libraries. [The latest is from 2015-08-23](http://blog.quicklisp.org/2015/08/july-2015-download-stats.html)

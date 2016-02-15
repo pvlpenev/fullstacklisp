@@ -1,0 +1,38 @@
+# Typographic conventions
+
+These are the typographic conventions used in this book.
+
+Code appearing inline in text paragraphs looks like this:
+
+This code is inlined: `(lambda () (format t "Hello World"))`.
+
+This is a code block in a file.:
+
+{:lang="common-lisp"}
+~~~~~~~~
+(defun hello-world ()
+  (format t "Hello World"))
+~~~~~~~~
+
+The following characters represent various prompts:
+
+A `*` represents a Lisp REPL(Read Eval Print Loop, the lisp interactive interpreter), `=>` marks the returned result: 
+
+{:lang="common-lisp"}
+~~~~~~~~
+ * (format nil "Hello World")
+ => "Hello World"
+~~~~~~~~
+
+`$` is a unix shell, # is a root shell, or code executed with `sudo`:
+
+~~~~~~~~
+ # apt-get install foo
+ $ foo --bar baz
+~~~~~~~~
+
+`>` is a windows `cmd.exe` prompt:
+
+~~~~~~~~
+ > dir C:\
+~~~~~~~~ 

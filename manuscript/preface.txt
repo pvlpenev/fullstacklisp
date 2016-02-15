@@ -1,0 +1,4 @@
+# About
+
+Lisp aliens have infected the terrestrial memetosphere with the meme complex of Common Lisp. The mindless human hosts find themselves helpless spreaders of the glory and joy of Lisp Development. Join us and become a great Lisp Programmer! Learn how to build and deploy modern Lisp applications in the booming ecosystem of modern software inhabited by lesser technologies. In the name of alien memetic symbiosis, Go Forth And Hack!
+

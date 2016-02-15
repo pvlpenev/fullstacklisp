@@ -1,0 +1,286 @@
+# Chapter 1: Roswell
+
+Roswell is a command line interface to common lisp. It's a way for you to manage your lisp setup from the unix shell. For example it can be used to install lisp implementations, write and run scripts written in Lisp and produce executables among other things. It's fairly new, but it's unquestionably one of the most useful tools to come out recently.
+
+## A quick word about Lisp implementations
+
+Because Lisp is an ANSI standard anybody is free to implement it themselves, and over the decades a significant number of implementations have appeared. In this section I'll list some of the more important implementations and why you might choose it over the others.
+
+The most popular open source implementation is SBCL, it has a native compiler and generates very efficient code. With proper optimizations it is not unheard of to get C-like performance out of Lisp programs. SBCL happens to be the authors personal favorite. 
+
+CCL is probably the second most popular implementation. Like SBCL it generates native code, although it has a faster compiler(meaning compiling code takes less time). For this reason it might be a better choice for use during development, while SBCL might be better suited for production, although both work well in both cases. An additional feature of CCL is that on OS X it comes with it's own IDE and a cocoa bridge for GUI programming. Both are useful and very high-quality so in this book we'll show you how to set them both up.
+
+Some honorable mentions:
+
+ABCL is Common Lisp running on the JVM. If you need to interface to a java system or are familiar with that ecosystem, ABCL deserves a serious look. 
+
+ECL or Embeddable Common Lisp is a very small implementation which as the name suggests supports embedding in a C/C++ application. In addition to it's bytecode compiler it supports native compilation through an intermediate translation to C. It has a much smaller footprint that the other implementations and is generally very cool.
+
+There are also the two major commercial implementations: LispWorks and Allegro Common Lisp. Both with native compilers and their own IDEs, GUI frameworks, and many other libraries. Both are rather expensive, but have limited free versions for trial purpose and might be worth checking out.
+
+In summary, unless you're doing something specific or just like to play around with interesting systems, SBCL and/or CCL are the implementations you should care about for the moment. 
+
+## Installing Roswell 
+
+The best way to install Roswell is from source:
+
+First let's install its dependencies:
+
+{:lang="shell"}
+~~~~~~~~
+ # apt-get install git build-essentials automake libcurl4-openssl-dev
+~~~~~~~~
+
+Next we clone the Roswell repo and build it:
+
+{:lang="bash"}
+~~~~~~~~
+ $ git clone -b release https://github.com/roswell/roswell.git
+ $ cd roswell
+ $ sh bootstrap
+ $ ./configure
+ $ make
+ # make install
+~~~~~~~~
+
+Let's verify that we've installed it:
+
+{:lang="bash"}
+~~~~~~~~
+ $ ros version
+ roswell 0.0.3.56(e0d9c43)
+ build with gcc (Ubuntu 4.9.2-10ubuntu13) 4.9.2
+ libcurl 7.38.0
+ lispdir='/usr/local/share/common-lisp/source/roswell/'
+ configdir='/home/pav/.roswell/'
+~~~~~~~~
+
+Type `ros help` to get a complete list of commands and options.
+
+## Installing Lisp implementations
+
+Let's install SBCL and CCL. This is done with the `ros install <implementation>/[<version>]` command. You can have multiple versions of the same implementation installed at the same time. At any one time roswell will use one as the default. Let's see what's available for installation:
+
+{:lang="bash"}
+~~~~~~~~
+ $ ros help install
+ Usage: ros install impl [OPTIONS]
+
+ For more details on impl specific options, type:
+  ros help install impl
+
+ Candidates impls for installation are:
+ ccl-bin
+ sbcl
+ sbcl-bin
+ clisp
+ ecl
+~~~~~~~~
+
+Ok, we have two candidates for SBCL: `sbcl` and `sbcl-bin`. The difference is that `sbcl-bin` downloads and installs a pre-build binary, while installing `sbcl` will download the source and build it. You should preferably install sbcl from source since on some platforms the pre-build binary was build without threading support and we threads:
+
+{:lang="bash"}
+~~~~~~~~
+ $ ros install sbcl
+~~~~~~~~
+
+When it's done we can try to run a repl to see if the installation was successful:
+
+{:lang="bash"}
+~~~~~~~~
+ $ ros run
+ * (+ 1 2)
+
+ 3
+~~~~~~~~
+
+It appears it is. Now let's install CCL:
+
+{:lang="bash"}
+~~~~~~~~
+ $ ros install ccl-bin
+~~~~~~~~
+
+If we have more than one implementation installed we can choose which one we want to use by suplying the `-L` option:
+
+{:lang="bash"}
+~~~~~~~~
+ $ ros -L ccl-bin run
+ Welcome to Clozure Common Lisp Version 1.11-r16635  (LinuxX8664)!
+
+ CCL is developed and maintained by Clozure Associates. For more information
+ about CCL visit http://ccl.clozure.com.  To enquire about Clozure's Common Lisp
+ consulting services e-mail info@clozure.com or visit http://www.clozure.com.
+
+ ? (+ 1 2)
+ 3
+~~~~~~~~
+
+It appears to work. If you want to change the default installation you can use the `use` command. First let's list the installed implementations and then change the default:
+
+{:lang="bash"}
+~~~~~~~~
+ $ ros list installed
+ Installed implementations:
+ ccl-bin
+ ccl-bin/1.11
+ sbcl
+ sbcl/1.3.2
+ $ ros use ccl-bin
+~~~~~~~~
+
+Now when we type `ros run` we'll get a CCL repl by default. 
+
+## A quick primer on Scripting with Roswell
+
+### Roswell installable scripts
+
+Roswell has the ability to install scripts other people have written and shared through Quicklisp(the Lisp package manager, we'll take a detailed look at it in the next chapter).
+
+By default roswell stores its scripts in `~/.roswell/bin`, let's add it to the path:
+
+{:lang="bash"}
+~~~~~~~~
+ $ echo "export PATH=\"\$HOME/.roswell/bin:\$PATH\"" >> ~/.bashrc
+~~~~~~~~
+
+Installing new scripts is done with the `install` command:
+
+{:lang="bash"}
+~~~~~~~~
+ $ ros install <script name>
+~~~~~~~~
+
+For a list of currently available scripts see [here](https://github.com/roswell/roswell/wiki/2.1-List-of-Roswell-Installable-Scripts)
+
+### Writing your own scripts
+
+We'll write a very simple example of an echo script that prints everything you give it back at you. Here's the code:
+
+
+{title="~/.roswell/bin/ros-echo.ros", lang="common-lisp"}
+~~~~~~~~
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+
+#|
+An echo script
+|#
+
+(defun main (&rest args)
+  (format t "~{~A ~}~%" args))
+~~~~~~~~
+
+Now we must make the script executable:
+
+{lang="bash"}
+~~~~~~~~
+ $ chmod +x ~/.roswell/bin/ros-echo.ros
+~~~~~~~~
+
+Let's try it out:
+
+{lang="bash"}
+~~~~~~~~
+ $ ros-echo.ros hello
+ hello
+~~~~~~~~
+
+#### How it works
+
+The first five lines basically say how the script is to be executed. First it is run as a normal shell script, but then the script is executed with the  ros command with the name of the script as a parameter and the rest of the arguments passed to it.
+
+{title="~/.roswell/bin/ros-echo.ros", lang="bash"}
+~~~~~~~~
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+~~~~~~~~
+
+Roswell loads the code and executes the main function. In this case it must take arbitrary number of arguments so we define it with an argument list of `(&rest args)`. The format directive simply prints the each element of the args list with spaces between them and a blank line at the end. It's literally one of the simplest possible scripts.
+
+{title="~/.roswell/bin/ros-echo.ros", lang="common-lisp", starting-line-number=11}
+~~~~~~~~
+(defun main (&rest args)
+  (format t "~{~A ~}~%" args))
+~~~~~~~~
+
+#### Compiling scripts
+
+What about performance though? Lets see how fast our script is:
+
+{lang="bash"}
+~~~~~~~~
+ $ time ros-echo.ros hello
+ hello
+ ros-echo.ros hello 0,36s user 0,01s system 98% cpu 0,374 total
+~~~~~~~~
+
+That isn't very good. Fortunately Roswell has a way build our script into a binary executable:
+
+{lang="bash"}
+~~~~~~~~
+ $ ros build ~/.roswell/bin/ros-echo.ros
+~~~~~~~~
+
+This will create a binary executable with the same name, but without the .ros extension. Let's see how well it performs:
+
+{lang="bash"}
+~~~~~~~~
+ $ time ros-echo hello
+ hello
+ ros-echo hello 0,00s user 0,01s system 70% cpu 0,011 total
+~~~~~~~~
+
+That's a sizable improvement.
+
+#### Dealing with arguments
+
+Let's modify the script to give it commands. Say we want to extend the script to capitalize, upcase or downcase it's input. It will look something like this:
+
+
+{lang="bash"}
+~~~~~~~~
+ $ ros-echo.ros hello world
+ hello world
+
+ $ ros-echo.ros --capitalize hello world
+ Hello World 
+
+ $ ros-echo.ros --upcase hello world
+ HELLO WORLD 
+
+ $ ros-echo.ros --downcase HELLO WORLD
+ hello world 
+~~~~~~~~
+
+Here's how the script would look like now:
+
+{title="~/.roswell/bin/ros-echo.ros", lang="common-lisp"}
+~~~~~~~~
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+
+#|
+An echo script
+|#
+
+(defun main (&optional $1 &rest args)  
+  (let ((args (cond ((string-equal $1 "--capitalize") (mapcar #'string-capitalize args))
+                    ((string-equal $1 "--upcase") (mapcar #'string-upcase args))
+                    ((string-equal $1 "--downcase") (mapcar #'string-downcase args))
+                    (t (cons $1 args)))))
+    (format t "~{~A ~}~%" args)))
+~~~~~~~~
+
+First, note the arguments to the `main` function. The first argument to the script gets bound to `$1` and the rest to `args`. In the `cond` form, if `$1` is one of the valid commands, we transform `args` appropriately, otherwise we simply stick `$1` at the head of the list, since in that case it isn't a command and we want to echo it as well. This is a very simple example, but it gives an idea of what you could do. 
+
+If you want to see more fancy ways to write scripts, check out the source of the Roswell installable scripts [here](https://github.com/roswell/roswell/wiki/2.1-List-of-Roswell-Installable-Scripts). For more information about Roswell check out it's [wiki](https://github.com/roswell/roswell/wiki/).

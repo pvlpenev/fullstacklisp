@@ -1,0 +1,3 @@
+# Warning to early readers
+
+This is a very early work in progress version of Full Stack Lisp. It is incomplete and possibly contains incorrect information. I'm releasing it as a status update and to get early feedback. Constructive criticism is extremely welcome. I hang out in irc on freenode in `#lisp` and `#lispweb` and on twitter `@pavelpenev` Source code is on github. If you find anything wrong with it please open an issue. 

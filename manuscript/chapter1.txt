@@ -1,0 +1,22 @@
+# Getting an implementation
+
+## Why so many implementations & which Lisp?
+
+Like all standardized programming languages Lisp has many implementations, sometimes competing, sometimes serving complementary roles. Not having to deal with an ever changing language and a single reference implementation under the iron keyboard of a BDFL has certain advantages. For one, your code will bitrot much slower, the bugs of the reference implementation won't just magically become part of the language, and you'll have much more choice.
+
+In Lisps specific case you have a lot of [choice](http://cliki.net/Common%20Lisp%20implementation). A Lisp beginner will inevitably ask the question "Which implementation?" nd the answer will almost always be SBCL and/or CCL. 
+
+![Emacs screenshot example](images/emacstest.png)
+
+test
+
+![Emacs screenshot density](images/emacstest1.png)
+
+test
+
+![Emacs screenshot resample](images/emacstest2.png)
+
+test
+
+![Emacs screenshot resample](images/emacstest3.png)
+

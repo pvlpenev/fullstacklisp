@@ -1,0 +1,7 @@
+-# Part One: Development environment
+
+![NASA astronaut Shannon Walker, Expedition 24 flight engineer, is pictured near a robotic workstation in the Destiny laboratory of the International Space Station. One day I'll have a workstation as cool as hers. LICENCE: Public Domain.](images/2048px-ISS-24_Shannon_Walker_in_front_of_the_robotic_workstation.jpg)
+
+[Source](https://commons.wikimedia.org/wiki/File:ISS-24_Shannon_Walker_in_front_of_the_robotic_workstation.jpg)
+
+In this part of the book we'll talk about everything you need in order to set up and use a basic Lisp and Emacs environment. We'll cover installing Lisp, writing scripts, editing lisp and interacting with the REPL as well as an introduction to some utilities and commonly used libraries that you should know about.

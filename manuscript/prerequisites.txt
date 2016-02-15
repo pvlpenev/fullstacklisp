@@ -1,0 +1,11 @@
+# Prerequisites
+
+I'm asuming you're at least somewhat familiar with lisp. If not, you should read a tutorial or an introductory book such as "Practical Common Lisp" or "Land of Lisp". This book isn't meant for complete beginners, but you don't need to know much to get started and pick things as you go along.
+
+You should also have a basic understanding of web development. Terms like HTTP, HTML, web servers, etc. shouldn't be foreign words to you.
+
+You should have a familiarity with Unix-like operating systems, like Linux, OS X or the BSDs.
+
+Some database knowledge will be extremely useful in later chapters.
+
+As always, your google-fu is your greatest friend.

@@ -1,0 +1,21 @@
+# Introduction
+
+After a couple of years of playing around with Scheme and later Clojure around 2008-2010 I made the fateful decision to learn Common Lisp. Originally the plan was to learn just enough Lisp to be able to read "On Lisp" by Paul Graham with proficiency and increase my mad Clojure skills, which was my favorite language at the time. My first reaction to this mutable and downright archaic dialect was a mix between fascination and revulsion. Uppercase symbols, uuuugghhhh! Somehow this mess of a language grew on me and I've been in love ever since. I've half joked about it infecting my brain, and if you think of a programming language as a memetic complex, it obviously is capable of infecting human hosts, so I'm not sure the joke isn't an actual fact. Send Help!
+
+When I look back on the last five years I've been involved in this horrible mess, the amount of change is astonishing. Lisp might be the mother of all late bloomers, well into its fifties it grew into a viable platform for actual applications written by mortal programmers. The Common Lisp ecosystem is growing into a very usable state, it's a great time to explore how to actually use this language in a practical manner from top to bottom and deliver modern applications.
+
+This is a book about application development. That means we'll explore run-times, servers, storage, frameworks and deployment, as well as various ways to use Lisp as part of a client application. In addition tools, libraries and practices the author finds useful will find their way into the book.
+
+This book assumes only basic Lisp knowledge, complete newbies should read an introductory tutorial before reading this book.
+
+The following is a quick outline of some of the topics this book will cover:
+
+* Setting up a development environment
+* Web servers, Clack HTTP library and the various frameworks built on top of it.
+* Client side lisp
+** Lispy HTML/CSS/JavaScript
+** Using 3rd party APIs
+** Desktop apps
+* DBs and ORMs
+* Very basic security and crypto
+* Deployment and management 
