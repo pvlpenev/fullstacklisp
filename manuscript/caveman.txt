@@ -1,0 +1,139 @@
+# Chapter 4: Caveman2
+
+## The web stack
+
+Caveman2 is a rather simple but feature complete framework for web development. It includes most of what you'd expect such a tool to have, such as a template language, database access, configuration, url routing, ect. 
+
+Caveman is based on ningle, a micro-framework which handles only the most basic functionality, such as url routing. Ningle itself is based on the Clack HTTP library and server interface. Because common lisp apps can support many different web servers such as hunchentoot and woo, you need a common interface between them, clack fills that role. Other than abstracting the server backend it also provides request and response objects and handler middleware. We'll take a deeper look into these features in due time. For now let's take a closer look at caveman itself.
+
+In this chapter we'll take a look at what caveman provides for us and we'll setup a simple project. Here's what we've got:
+
+* Ningle based url routing
+* Database access using the datafly and sxql libraries
+* The Djula templating library, a port of the Django template language.
+* A configuration system called ENVY that allows us to configure our app using environment variables.
+
+## Setting up a simple project
+
+First let's install caveman with quicklisp
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (ql:quickload "caveman2") 
+ => ("caveman2")
+~~~~~~~~
+
+Caveman comes with a built in project generator. Let's say we want to write our own wiki, here is how we can generate a project skeleton for it:
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (caveman2:make-project #P"~/.roswell/local-projects/fullstackwiki"
+                          :author "Pavel" 
+                          :license "MIT")
+
+writing ~/.roswell/local-projects/fullstackwiki/fullstackwiki.asd
+writing ~/.roswell/local-projects/fullstackwiki/fullstackwiki-test.asd
+writing ~/.roswell/local-projects/fullstackwiki/app.lisp
+writing ~/.roswell/local-projects/fullstackwiki/README.markdown
+writing ~/.roswell/local-projects/fullstackwiki/.gitignore
+writing ~/.roswell/local-projects/fullstackwiki/db/schema.sql
+writing ~/.roswell/local-projects/fullstackwiki/src/config.lisp
+writing ~/.roswell/local-projects/fullstackwiki/src/db.lisp
+writing ~/.roswell/local-projects/fullstackwiki/src/main.lisp
+writing ~/.roswell/local-projects/fullstackwiki/src/view.lisp
+writing ~/.roswell/local-projects/fullstackwiki/src/web.lisp
+writing ~/.roswell/local-projects/fullstackwiki/static/css/main.css
+writing ~/.roswell/local-projects/fullstackwiki/t/fullstackwiki.lisp
+writing ~/.roswell/local-projects/fullstackwiki/templates/index.html
+writing ~/.roswell/local-projects/fullstackwiki/templates/_errors/404.html
+writing ~/.roswell/local-projects/fullstackwiki/templates/layouts/default.html
+
+ => T
+~~~~~~~~
+
+What we did was we called the function `caveman2:make-project` with the path to our project as an argument. We put our project in local-projects, so ASDF and quicklisp can find it. We called the project "fullstackwiki" and we gave the author name and license as keyword arguments. Note that we must pass it a pathname object rather than a string.
+
+As you can see from the printed output of `make-project` it generated quite a bit of files. Let's take closer look.
+
+The root directory of our project contains asd files for our app and an auto generated test system, a README file and a lisp specific `.gitignore` file.
+
+Let's take a closer look at `fullstackwiki.asd`
+
+<<[fullstackwiki.asd](code/chapter4/fullstackwiki/fullstackwiki.asd)
+
+Here we see that the code to our app is in the "src" directory(called a module by ASDF), and it has the following componets:
+
+* `config.lisp` is the main configuration, it uses ENVY.
+* `db.lisp` defines our database layer
+* `view.lisp` handles html templates
+* `web.lisp` defines our routes
+* `main.lisp` handles how our app is started and stopped
+
+We'll take a look at all of these files in the next sections.
+
+## Configuration
+
+Envy is a configuration utility which allows you to define several different configurations and then switch between them based on the value of an environment variable. For example you can have a separate configuration on a development machine and one for production deployment. It also allows you to define a common configuration and have the other ones just define the differences, rather than duplicate code. Let's take a closer look at `src/config.lisp`:
+
+<<[fullstackwiki.asd](code/chapter4/fullstackwiki/fullstackwiki.asd)
+
+I> Note that caveman uses a "one package one file" style of code organization. That means that every file with lisp code defines it's own package. It's an alternative to packages spanning multiple files. In such a setup the project might have a `packages.lisp` file that defines the packages, and individual files will just have a `in-package` statement at the top. This is the more popular lisp style. In the "one package one file" style on the other hand, each file has a `defpackage` statement at the top with all of the imports and exports.
+I>
+I> This style has the advantage that you see what this file uses and from where, and also what it exports. It forces you to think a bit more about your dependencies between files and might be considered a bit easier to manage, while its disadvantage is that it's a bit more cumbersome.
+I>
+I> Although I prefer larger packages spread across multiple files, since this is the style encouraged by caveman, that's the one I'll use for these examples. You'll have to make your own choice, there is no wrong answer.
+
+First the line `(setf (config-env-var) "APP_ENV")` tells ENVY to switch configuration based on the `APP_ENV` environment variable. 
+
+Next the `*application-root*`, `*static-directory*` and `*temlate-directory*` variables are defined which contain our app, our static resources and our html templates respectively. 
+
+The macro `defconfig` is used to define configurations as the name suggests. A config has a name and a body. As you can see above the body itself is a plist of values. The `:common` name is special, because it is included in every other configuration. In this case it only defines that the database used by default is sqlite3 and it's to be stored in memory, rather than create a file on disk.
+
+The other defined configurations are `|development|`, `|production|` and `|test|`, which are all empty. The reason they are named with `||` is because that's how common lisp symbols are written in lower case. Remember that a configuration is chosen based on the value of an environment variable. You could name your config `production`, but since lisp symbols are upcased by default, you'll have to set your environment variable in upcase: `export APP_ENV=PRODUCTION`. 
+
+Finally the file defines a few utility functions:
+* `config` gives returns back the configuration, or if an optional `key` argument is given, it looks it up and returns it's value. 
+* `appenv` returns the value of the configured environment variable
+* `developmentp` and `productionp` simply tell you if you're running in dev or prod respectively.
+
+That's it. We'll take a closer look again at configuration when we set up a database for our project other than sqlite3, for now you get the idea.
+
+## Database 
+
+TBW
+
+## Views
+
+By default caveman apps use Djula for html templating. Djula is an implementation of the Django template engine. If you haven't used a template language before it's basically an ordinary text file with special tags in between which insert or transform data. For example this is a very simple Djula template:
+
+~~~~~~~~
+{% if username %}
+Hello {{username}}!
+{% else %}
+Please login!
+{% endif %}
+~~~~~~~~
+
+This template defines a variable called `username`, when we render our template we'll pass it an argument with the value of `username` and it will use it to transform the text. For example it's value is `Pavel`, well get the string "Hello Pavel", but if it's nil we'll get the string "Please login!". Although template languages aren't specific to HTML, they are extremely useful for just that purpose and that's mostly what we'll be using them for in this book. We'll go through the template language itself in a separate chapter later.
+
+In a caveman app, the Djula templates are kept in the directory designated by `*template-directory*`, which in our case is `fullstackwiki/templates/`. A fresh project will have a few such templates already defined in that directory. Like the Django engine, Djula supports template inheritance, which means that means we can put common code in separate files and reuse it in other templates. Our project already has such a shared template defined in the directory `fullstackwiki/templates/layout/`. Let's take a look at the file named `default.html` in that directory:
+
+<<[default.html](code/chapter4/fullstackwiki/templates/layouts/default.html)
+
+As you can see, this is just an ordinary HTML document, but with Djula tags added. In this case the tags are two pairs of `{% block $}`/`{% endblock %}`. What this tag does is it allows other templates to insert data in these blocks when they extend the default.html file. In our case we've defined two named blocks: `title` and `content`. Let's take a look at `index.html`, which extends base.html:
+
+<<[index.html](code/chapter4/fullstackwiki/templates/index.html)
+
+The first line introduces the `extends` tag, we give it the base template as an argument. Now any time we use the `block` tag with the name of a block, anything in it will be inserted into the base template. 
+
+Other than that caveman also defines a `errors/404.html` page for us.
+
+That's it for now. We'll take a look at more tags as we need them.
+
+## Routing
+
+TBW
+
+## Conclusion
+
+TBW

@@ -9,3 +9,5 @@ part-one.txt
 roswell.txt
 systems.txt
 emacs.txt
+part-two.txt
+caveman.txt
