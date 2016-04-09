@@ -98,10 +98,6 @@ Finally the file defines a few utility functions:
 
 That's it. We'll take a closer look again at configuration when we set up a database for our project other than sqlite3, for now you get the idea.
 
-## Database 
-
-TBW
-
 ## Views
 
 By default caveman apps use Djula for html templating. Djula is an implementation of the Django template engine. If you haven't used a template language before it's basically an ordinary text file with special tags in between which insert or transform data. For example this is a very simple Djula template:
@@ -132,7 +128,74 @@ That's it for now. We'll take a look at more tags as we need them.
 
 ## Routing
 
+The main purpose of a web framework is to match urls to code that returns a response to the client. Let's see how caveman does that. The important code is in `fullstackwiki/src/web.lisp`. Let's look at some of the code in that file.
+
+First up, caveman2 stores url routing rules in an object called an app, which is an instance of the `<app>` class. Here we create a subclass called `<web>` and instantiate it, store it in a variable called `fullstackwiki.web:*web*` and clear it's routing rules: 
+
+{title="fullstackwiki/src/web.lisp", lang="common-lisp", starting-line-number=19}
+~~~~~~~~
+(defclass <web> (<app>) ())
+(defvar *web* (make-instance '<web>))
+(clear-routing-rules *web*)
+~~~~~~~~
+
+Now we can begin defining routes. A route is a mapping of url template and additional conditions to Common Lisp functions. Caveman2 gives us two ways to define them. The first is annotation syntax, and the other is the `defroute` macro. Notice on line 14 of the file we have the following code: `(syntax:use-syntax :annot)`. This allows us to annotate functions using the `@annotation` syntax, this is how it might look like:
+
+{title="Annotation example", lang="common-lisp"}
+~~~~~~~~
+@route GET "/"
+(defun index ()
+  (render #P"index.html"))
+~~~~~~~~
+
+The first line is an annotation, followed by a function. This isn't standard Common Lisp, but a reader syntax extension. Annotations are essentially functions that take a form and transform it in some way, in this case it creates a routing rule for the url template `"/"` and associates the function `index` as it's handler. We won't be using annotation syntax in this book, since it is equivalent to the `defroute` macro in functionality and I have a strong aesthetic preference, at least for my projects, you are free to choose annotations. Now let's look at the equivalent code as a `defroute` as it was defined in `fullstackwiki/src/web.lisp`:
+
+
+{title="fullstackwiki/src/web.lisp", lang="common-lisp", starting-line-number=26}
+~~~~~~~~
+(defroute "/" ()
+  (render #P"index.html"))
+~~~~~~~~
+
+This is essentially equivalent to the annotation code. It defines a handler for the `"/"` url. The body of the route simply renders the `index.html` template and returns it to the client. We'll take a look at much more complicated examples of routes later in the book.
+
+Finally at the bottom of the file is this interesting method:
+
+{title="fullstackwiki/src/web.lisp", lang="common-lisp", starting-line-number=32}
+~~~~~~~~
+(defmethod on-exception ((app <web>) (code (eql 404)))
+  (declare (ignore app))
+  (merge-pathnames #P"_errors/404.html"
+                   *template-directory*))
+~~~~~~~~
+
+In case no route matches the url of the request, this method will handle it by sending back a 404 Not Found response.
+
+## A few words about Clack/Lack
+
 TBW
+
+## Running the app
+
+The way clack based apps are run is with the `clack:clackup` function. Other than a function or a component it can also take an app file that configures our application as an argument:
+
+{title="clackup example", lang="common-lisp"}
+~~~~~~~~
+(clack:clackup #P"/path/to/app.lisp" args)
+~~~~~~~~
+
+This is useful since we might want to add middleware and other options to our app and we need a place where we can do that. Also the file can be used to start our application from the command line. We'll see how that might be done in later chapters. In our case, caveman defined one such file in the root of our project called `app.lisp`, let's take a look:
+
+<<[app.lisp](code/chapter4/fullstackwiki/app.lisp)
+
+First it uses `quicklisp` to load our project, since the file itself isn't part of it. It then imports our app and its configuration and uses `lack:builder` to build a lack component. It's setting up static file handling, session and other middleware based on our configuration and applying them to our app. When you call `clack:clackup` with that file as an argument, it gets evaluated and the result of the `lack:builder` form is run as our app. 
+
+For actually running the app, caveman generated a few convenience functions in `fullstackwiki/src/main.lisp` let's take a look:
+
+<<[app.lisp](code/chapter4/fullstackwiki/src/main.lisp)
+
+This file defines our main package `fullstackwiki`. It also defines our app file and a pair of start/stop functions. As you can see, start checks if the app is running, and if it is, it offers to restart it, otherwise it calls `clack:clackup` with the file and sets the result to the `*handler*` variable. Stop is pretty self explanatory. 
+
 
 ## Conclusion
 
