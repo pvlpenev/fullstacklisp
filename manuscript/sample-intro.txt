@@ -1,10 +1,11 @@
 # Warning to early readers
 
-This is a very early work in progress version of Full Stack Lisp. It is incomplete and possibly contains incorrect information. I'm releasing it as a status update and to get early feedback. Constructive criticism is extremely welcome. I hang out in irc on freenode in `#lisp` and `#lispweb` and on twitter `@pavelpenev`. The book also has a dedicated twitter account `@fullstacklisp` and a [web page](http://fullstacklisp.com). Source code is on [github](https://github.com/pvlpenev/fullstacklisp). If you find anything wrong with it please open an issue.
+This is a very early work in progress version of Full Stack Lisp. It is incomplete and possibly contains incorrect information. I'm releasing it as a status update and to get early feedback. Constructive criticism is extremely welcome. I hang out in irc on freenode in `#lisp` and `#lispweb` and on twitter [@pavelpenev](https://twitter.com/pavelpenev). The book also has a dedicated twitter account [@fullstacklisp](https://twitter.com/fullstacklisp) and a [web page](http://fullstacklisp.com). Source code is on [github](https://github.com/pvlpenev/fullstacklisp). If you find anything wrong with it please open an issue.
 
 ## Current Status
 
 Each section of the book is in one of the following states(ordered by proximity to completion):
+
 * To be written
 * Early draft
 * Late draft
@@ -15,32 +16,34 @@ The current status of book is as follows
 
 * Frontmatter (Needs editing)
 * Part I
-** Chapter 1: Roswell (Late Draft)
-** Chapter 2: Lisp libraries (Early draft)
-Some parts are missing and will possibly be expanded beyond that at a later stage
-** Chapter 3: Editing Lisp (Early draft)
-Many sections are TBW, some parts might get rewritten.
+  * Chapter 1: Roswell (Late Draft)
+  * Chapter 2: Lisp libraries (Early draft)
+    Some parts are missing and will possibly be expanded beyond that at a later stage
+  * Chapter 3: Editing Lisp (Early draft)
+    Many sections are TBW, some parts might get rewritten. Additionally I'll eventually cover the Atom editor.
 * Part II
-** Chapter 4: Caveman2 (Early draft)
-Very early draft, possibly subject to a complete rewrite. Many missing parts.
+  * Chapter 4: Caveman2 (Early draft)
+    Very early draft, possibly subject to a complete rewrite. Many missing parts.
 
 ## What remains to be written
 
 Current plans include:
+
 * A chapter walking the reader through developing a simple wiki app
-Will include detailed information on Caveman2's features, including a detailed Djula tutorial, more Envy examples, and an introduction to it's DB layer.
+  Will include detailed information on Caveman2's features, including a detailed Djula tutorial, more Envy examples, and an introduction to it's DB layer.
 * A chapter on alternatives
-Caveman uses Djula for templating and datafly/sxql for DB access. We'll introduce alternatives, such as s-expression based HTML generation and various database libraries
+  Caveman uses Djula for templating and datafly/sxql for DB access. We'll introduce alternatives, such as s-expression based HTML generation and various database libraries
 * A basic Ironclad tutorial
-Introduction to ironclad and how to properly store passwords, API keys, ect.
+  Introduction to ironclad and how to properly store passwords, API keys, ect.
 * A chapter on frontend tools.
-Tools to help with CSS and writing JavaScript such as paredit
+  Tools to help with CSS and writing JavaScript such as paredit
 * A chapter on deployment
-From a simple Nginx setup to using docker with common lisp
+  From a simple Nginx setup to using docker with common lisp
 
 ## Additional ideas
 
 I have some other ideas that might not make it into the book, such as:
+
 * A chapter on Restful services
 * Building desktop apps in a webview
 * Packaging executables
