@@ -18,11 +18,16 @@ The current status of book is as follows
 * Part I
   * Chapter 1: Roswell (Late Draft)
   * Chapter 2: Lisp libraries (Early draft)
+  
     Some parts are missing and will possibly be expanded beyond that at a later stage
+
   * Chapter 3: Editing Lisp (Early draft)
+  
     Many sections are TBW, some parts might get rewritten. Additionally I'll eventually cover the Atom editor.
+
 * Part II
   * Chapter 4: Caveman2 (Early draft)
+  
     Very early draft, possibly subject to a complete rewrite. Many missing parts.
 
 ## What remains to be written
@@ -30,14 +35,23 @@ The current status of book is as follows
 Current plans include:
 
 * A chapter walking the reader through developing a simple wiki app
+
   Will include detailed information on Caveman2's features, including a detailed Djula tutorial, more Envy examples, and an introduction to it's DB layer.
+
 * A chapter on alternatives
+
   Caveman uses Djula for templating and datafly/sxql for DB access. We'll introduce alternatives, such as s-expression based HTML generation and various database libraries
+
 * A basic Ironclad tutorial
+
   Introduction to ironclad and how to properly store passwords, API keys, ect.
+
 * A chapter on frontend tools.
+
   Tools to help with CSS and writing JavaScript such as paredit
+  
 * A chapter on deployment
+
   From a simple Nginx setup to using docker with common lisp
 
 ## Additional ideas
