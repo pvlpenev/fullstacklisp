@@ -171,6 +171,8 @@ Finally at the bottom of the file is this interesting method:
 
 In case no route matches the url of the request, this method will handle it by sending back a 404 Not Found response.
 
+W> It's important to remain consistent within the projects you use. As with "one file, one package" vs "big packages", you much choose if your project will use annotations or `defroute` and stick with it, rather than mix and match. 
+
 ## A few words about Clack/Lack
 
 TBW

@@ -1,3 +1,52 @@
 # Warning to early readers
 
-This is a very early work in progress version of Full Stack Lisp. It is incomplete and possibly contains incorrect information. I'm releasing it as a status update and to get early feedback. Constructive criticism is extremely welcome. I hang out in irc on freenode in `#lisp` and `#lispweb` and on twitter `@pavelpenev` Source code is on [github](https://github.com/pvlpenev/fullstacklisp). If you find anything wrong with it please open an issue.
+This is a very early work in progress version of Full Stack Lisp. It is incomplete and possibly contains incorrect information. I'm releasing it as a status update and to get early feedback. Constructive criticism is extremely welcome. I hang out in irc on freenode in `#lisp` and `#lispweb` and on twitter `@pavelpenev`. The book also has a dedicated twitter account `@fullstacklisp` and a [web page](http://fullstacklisp.com). Source code is on [github](https://github.com/pvlpenev/fullstacklisp). If you find anything wrong with it please open an issue.
+
+## Current Status
+
+Each section of the book is in one of the following states(ordered by proximity to completion):
+* To be written
+* Early draft
+* Late draft
+* Needs editing
+* Done
+
+The current status of book is as follows
+
+* Frontmatter (Needs editing)
+* Part I
+** Chapter 1: Roswell (Late Draft)
+** Chapter 2: Lisp libraries (Early draft)
+Some parts are missing and will possibly be expanded beyond that at a later stage
+** Chapter 3: Editing Lisp (Early draft)
+Many sections are TBW, some parts might get rewritten.
+* Part II
+** Chapter 4: Caveman2 (Early draft)
+Very early draft, possibly subject to a complete rewrite. Many missing parts.
+
+## What remains to be written
+
+Current plans include:
+* A chapter walking the reader through developing a simple wiki app
+Will include detailed information on Caveman2's features, including a detailed Djula tutorial, more Envy examples, and an introduction to it's DB layer.
+* A chapter on alternatives
+Caveman uses Djula for templating and datafly/sxql for DB access. We'll introduce alternatives, such as s-expression based HTML generation and various database libraries
+* A basic Ironclad tutorial
+Introduction to ironclad and how to properly store passwords, API keys, ect.
+* A chapter on frontend tools.
+Tools to help with CSS and writing JavaScript such as paredit
+* A chapter on deployment
+From a simple Nginx setup to using docker with common lisp
+
+## Additional ideas
+
+I have some other ideas that might not make it into the book, such as:
+* A chapter on Restful services
+* Building desktop apps in a webview
+* Packaging executables
+
+If you have other ideas and they seem like they might be in the scope of the book, I'd love to hear from you!
+
+## Thank you!
+
+Thank you for reading this early draft! Feedback is extremely crucial at this phase of the project. I might be painting myself into a corner and the only way to know is if somebody tells me. Thank you especially if you bought the book through leanpub. I'm currently self-funding this project, which is a fancy way of saying I'm burning through my savings to write and I don't know how much I'll be able to finish before they run out. Your contribution is greatly appreciated and is of great help!
