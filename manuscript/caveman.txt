@@ -75,7 +75,7 @@ We'll take a look at all of these files in the next sections.
 
 Envy is a configuration utility which allows you to define several different configurations and then switch between them based on the value of an environment variable. For example you can have a separate configuration on a development machine and one for production deployment. It also allows you to define a common configuration and have the other ones just define the differences, rather than duplicate code. Let's take a closer look at `src/config.lisp`:
 
-<<[fullstackwiki.asd](code/chapter4/fullstackwiki/fullstackwiki.asd)
+<<[fullstackwiki.asd](code/chapter4/fullstackwiki/src/config.lisp)
 
 I> Note that caveman uses a "one package one file" style of code organization. That means that every file with lisp code defines it's own package. It's an alternative to packages spanning multiple files. In such a setup the project might have a `packages.lisp` file that defines the packages, and individual files will just have a `in-package` statement at the top. This is the more popular lisp style. In the "one package one file" style on the other hand, each file has a `defpackage` statement at the top with all of the imports and exports.
 I>

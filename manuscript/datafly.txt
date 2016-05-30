@@ -1,0 +1,645 @@
+# Chapter 5: Datafly and SXQL
+
+In this chapter we'll take a look at Caveman2's database access capability and define a simple model for our wiki app.
+
+## Database access 
+
+The default Caveman2 data layer uses a library called `CL-DBI`, which provides drivers for most popular RDBMSs out there, including PostgreSQL, SQLite and MySQL. Instead of using it directly though, most of the time we'll be using another library called `datafly` to access our data. This library provides a thin wrapper over CL-DBI and gives us 3 main functions: `EXECUTE` executes an SQL statement, `RETRIEVE-ONE` and `RETRIEVE-ALL` are used to fetch data, again with an SQL statement. Instead of writing SQL by hand, we'll be using a lispy SQL dsl called `SXQL`, which allows us to write queries in a lispy syntax. You can use pretty much any database libraries you wish with Caveman2, and later on we'll take a look at some alternatives, but for now the default choices will work just fine.
+
+Before we look at some examples, let's first set up a database. This book will use PostgreSQL, so let's install it, on debian-like Linux distros this will be
+
+{lang="shell"}
+~~~~~~~~
+ $ sudo apt-get install postgresql
+~~~~~~~~
+
+I also advise you to install the excellent pgadmin3 package, which provides a nice GUI for database management:
+
+{lang="shell"}
+~~~~~~~~
+ $ sudo apt-get install pgadmin3
+~~~~~~~~
+
+Next, the first thing we must do us set up a postgreSQL database and a user. We must do this with the postgres unix account, type the following to log in as the postgres user
+
+{lang="shell"}
+~~~~~~~~
+ $ sudo su - postgres
+~~~~~~~~
+
+Now start the PostgreSQL CLI client `psql`:
+
+{lang="shell"}
+~~~~~~~~
+ $ psql
+~~~~~~~~
+
+You will notice the new prompt:
+
+{lang="SQL"}
+~~~~~~~~
+postgres=# 
+~~~~~~~~
+
+Let's create a new user, type the following:
+
+{lang="SQL"}
+~~~~~~~~
+CREATE USER fswiki WITH PASSWORD 'fswikipass';
+~~~~~~~~
+
+Now we must create a new database:
+
+{lang="SQL"}
+~~~~~~~~
+CREATE DATABASE fswikidb;
+~~~~~~~~
+
+And finally, we must grant our user all the privileges to use the new database:
+
+{lang="SQL"}
+~~~~~~~~
+GRANT ALL PRIVILEGES ON DATABASE fswikidb TO fswiki;
+~~~~~~~~
+
+That's it, type `\q` to exist psql, and type `exit` to logout of the postgres account. 
+
+Now, let's try it out. Open the `src/config.lisp`, and edit the `(defconfig :common ...)` section:
+
+{title="fullstackwiki/src/config.lisp", lang="common-lisp", starting-line-number=22}
+~~~~~~~~
+(defconfig :common
+    `(:databases ((:maindb :postgres
+                           :database-name "fswikidb"
+                           :username "fswiki"
+                           :password "fswikipass"))))
+~~~~~~~~
+
+Now let's take a look at the `src/db.lisp` file:
+
+{title="fullstackwiki/src/config.lisp", lang="common-lisp"}
+~~~~~~~~
+(in-package :cl-user)
+(defpackage fullstackwiki.db
+  (:use :cl)
+  (:import-from :fullstackwiki.config
+                :config)
+  (:import-from :datafly
+                :*connection*
+                :connect-cached)
+  (:export :connection-settings
+           :db
+           :with-connection
+           :with-transaction))
+(in-package :fullstackwiki.db)
+
+(defun connection-settings (&optional (db :maindb))
+  (cdr (assoc db (config :databases))))
+
+(defun db (&optional (db :maindb))
+  (apply #'connect-cached (connection-settings db)))
+
+(defmacro with-connection (conn &body body)
+  `(let ((*connection* ,conn))
+     ,@body))
+~~~~~~~~
+
+What we see here is a few utility functions defined for us. `connection-settings` pulls the current db configuration, `db` establishes a new connection, or pulles a an already existing one from a chache, and the macro `with-connection` simply binds it to the `*connection*` variable so that datafly functions know which connection to use when querying the database, and enter into this package
+
+Now let's start a fresh repl and load our project to look at some examples:
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (ql:quickload "fullstackwiki")
+ * (in-package :fullstackwiki.db)
+~~~~~~~~
+
+For all our code we should use `with-connection`, but it's a bit cumbersome to write it all the time in the repl, so let's set a top-level connection:
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (apply #'datafly:connect-toplevel (connection-settings :maindb))
+~~~~~~~~
+
+Now we can call datafly functions without wrapping them in calls to `with-connection`. Let's create a simple table:
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (datafly:execute
+     (sxql:create-table (:test-table if-not-exists t)
+         ((id :type 'serial :primary-key t)
+          (name :type 'text))))
+~~~~~~~~
+
+This creates a new table called `test-table` if it doesn't already exist. Calling this code again will not do anything, since it already exists. The table has two fields, `id`, which is of type serial, a postgreSQL specific way to get auto-incremented integers, this field is our primary key, and `name`, which is a text field. The syntax for `sxql:create-table` is in general fairly simple:
+
+~~~~~~~~
+(sxql:create-table <table-name> (<fields>*) <options>*)
+~~~~~~~~
+
+Fairly similar to standard SQL, but in lisp syntax. The field definitions have various options, we've seen `type`, and `primary-key`, but others like `not-null` and `unique` are also supported.
+
+Now let's insert a row into the table:
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (datafly:execute
+     (sxql:insert-into :test-table
+       (sxql:set= :name "Hello World")))
+~~~~~~~~
+
+Similar to standard SQL insert into statement, `sxql:insert-into` takes a table same and a list of clauses, in this case only one `sxql:set=` clause. We set the name to "Hello World", the id is auto-incremented, so we don't have to specify it.
+
+Retrieving data works in a similar way:
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (datafly:retrieve-all (sxql:select :* (sxql:from :test-table)))
+=> ((:ID 1 :NAME "Hello World"))
+~~~~~~~~
+
+Again, the statement `sxql:select` works like in regular SQL, It expects a list of fielsds and a list of clauses, in this case we have a single field `:*` equivalent to the SQL `*` operator, and a single `from` clause specifying the table. Instead of `datafly:execute` we use `datafly:retrieve-all` since we expect to get back results instead of just executing a statement on the server. The result is a list of plists, in this case just one, since we only have one record in the table. The function `datafly:retrieve-one` works in a similar way, but returns only a single result:
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (datafly:retrieve-one (sxql:select :* (sxql:from :test-table)))
+=> (:ID 1 :NAME "Hello World")
+~~~~~~~~
+
+We'll see more examples and I'll go into more depth in a moment, this is just to get your feet wet. Now that we've seen the basics, let's drop this table and disconnect, so we can get to some real work in the next section:
+
+{lang="common-lisp"}
+~~~~~~~~
+ * (datafly:execute (sxql:drop-table :test-table))
+
+ * (datafly:disconnect-toplevel)
+~~~~~~~~
+
+## The Wiki Model 
+
+Our wiki app has some pretty basic requirements. First we need to be able to create users and log them in. Next users have to be able to create and edit wiki pages. We also want pages to have different versions, so they have a history we can go back to and see what was edited. In this chapter we'll see a very simple model that can do what we want. The model only has two tables, `user` and `page`, and a few functions to create and query the data. The first thing we'll need to do though is update our `fullstackwiki.asd` file. We'll need to add two lines, the first is adding a dependency to `cl-pass` a library for hashing passwords, since we don't want to store them in plain text. The other one is to add a `src/model.lisp` file where our code will be. Here is how the updated asd file looks like. The lines we've changed are number 27 and number 34. Notice that `model` depends on `db`:
+
+
+{title="fullstackwiki/fullstackwiki.asd", lang="common-lisp"}
+~~~~~~~~
+(in-package :cl-user)
+(defpackage fullstackwiki-asd
+  (:use :cl :asdf))
+(in-package :fullstackwiki-asd)
+
+(defsystem fullstackwiki
+  :version "0.1"
+  :author "Pavel"
+  :license "MIT"
+  :depends-on (:clack
+               :lack
+               :caveman2
+               :envy
+               :cl-ppcre
+               :uiop
+
+               ;; for @route annotation
+               :cl-syntax-annot
+
+               ;; HTML Template
+               :djula
+
+               ;; for DB
+               :datafly
+               :sxql
+               ;; Password hashing
+               :cl-pass)
+  :components ((:module "src"
+                :components
+                ((:file "main" :depends-on ("config" "view" "db"))
+                 (:file "web" :depends-on ("view"))
+                 (:file "view" :depends-on ("config"))
+                 (:file "db" :depends-on ("config"))
+                 (:file "model" :depends-on ("db")) ;; model
+                 (:file "config"))))
+  :description ""
+  :in-order-to ((test-op (load-op fullstackwiki-test))))
+~~~~~~~~
+
+Another bit of houskeeping we must do is extend `src/db.lisp` with an additional macro. Our model will need to be able to execute SQL statements inside a database transaction, for this we'll need to implement a `with-transaction` macro, add this to the bottom of the file:
+
+{title="fullstackwiki/src/db.lisp", lang="common-lisp", starting-line-number=19}
+~~~~~~~~
+(defmacro with-transaction (conn &body body)
+  `(let ((*connection* ,conn))
+     (cl-dbi:with-transaction *connection*
+       ,@body)))
+~~~~~~~~
+
+This macro is similar to `with-connection`, but we additionally make a call to the low-level `CL-DBI:with-transaction` macro to make sure everything in the body is executed in the proper order and we don't break our database. We also have to export it from the `defpackage` form at top of the file:
+
+{title="fullstackwiki/src/db.lisp", lang="common-lisp"}
+~~~~~~~~
+(in-package :cl-user)
+(defpackage fullstackwiki.db
+  (:use :cl)
+  (:import-from :fullstackwiki.config
+                :config)
+  (:import-from :datafly
+                :*connection*
+                :connect-cached)
+  (:export :connection-settings
+           :db
+           :with-connection
+           :with-transaction)) ;; new macro
+~~~~~~~~
+
+Now we're almost all set. Let's create a new file called `src/model.lisp` and create a package for it:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp"}
+~~~~~~~~
+;;;; model.lisp
+
+(in-package :cl-user)
+
+(defpackage fullstackwiki.model
+  (:use :cl :sxql)
+  (:import-from :fullstackwiki.db
+                :db
+                :with-connection
+                :with-transaction) 
+  (:import-from :datafly
+                :execute
+                :retrieve-all
+                :retrieve-one)
+  (:export :create-tables
+           :find-user
+           :add-user
+           :authenticate-user
+           :add-page
+           :get-latest-page
+           :get-latest-pages-by-user
+           :get-sorted-pages
+           :count-pages
+           :nth-page-revision))
+
+(in-package :fullstackwiki.model)
+~~~~~~~~
+
+This sets up a new package called `fullstackwiki.model` for us, and it imports all the symbols we'll need from `sxql`, `fullstackwiki.db` and `datafly`. It also exports the package's public API. I'll explain what all these functions do in the next sections.
+
+## User model
+
+Our user model is very simple, It consists of a user table, let's write a function that creates it for us:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=30}
+~~~~~~~~
+(defun create-user-table ()
+  "Create user table if it doesn't exist yet."
+  (with-connection (db)
+    (execute
+     (create-table (:user :if-not-exists t)
+         ((id :type 'serial :primary-key t)
+          (username :type 'text :not-null t :unique t)
+          (email :type 'text :not-null t :unique t)
+          (password :type 'text :not-null t))))))
+~~~~~~~~
+
+The user table has four fields, an `id`, username, email and password. This is pretty self-explanatory. We make all fields `:not-null` and the email and username fields have to be `:unique`. Now a function to register a new user:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=40}
+~~~~~~~~
+(defun add-user (username email password)
+  "add user record to database."
+  (with-connection (db)
+    (execute
+     (insert-into :user
+       (set= :username username
+             :email email
+             :password (cl-pass:hash password))))))
+~~~~~~~~
+
+Again, nothing we haven't seen before, we insert a new user row, but the password is hashed with the `cl-pass:hash` function. This is how it might look like in the repl:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (cl-pass:hash "hello")
+"PBKDF2$SHA256:20000$307629b11dd0f4df0c55c2b78f2f97a8$5213c150869544fc0a96e95d10d4a3157cd398ddeb4b3f128ebcaa90e6e50482"
+* (cl-pass:check-password "hello" *)
+T
+* (cl-pass:check-password "wrong password" **)
+NIL
+~~~~~~~~
+
+Next, we need a way to retrieve a user:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=49}
+~~~~~~~~
+(defun find-user-by-username (username)
+  "lookup user record by username."
+  (with-connection (db)
+    (retrieve-one
+     (select :*
+       (from :user)
+       (where (:= :username username))))))
+~~~~~~~~
+
+This is the first time we see a clause other that `from` in an SXQL statement, in this case we specify what the username must be with the `where` clause. Let's do the same with the email field:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=57}
+~~~~~~~~
+(defun find-user-by-email (email)
+  "lookup user record by email."
+  (with-connection (db)
+    (retrieve-one
+     (select :* (from :user)
+             (where (:= :email email))))))
+~~~~~~~~
+
+Now, since we'll want the user to be able to log in either with a username or with an email address, let's combine the two functions:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=57}
+~~~~~~~~
+(defun find-user (username-or-email)
+  "lookup user record by username or email."
+  (or (find-user-by-username username-or-email)
+      (find-user-by-email username-or-email)))
+~~~~~~~~
+
+And finally, we must check to see if the user credentials are valid:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=69}
+~~~~~~~~
+(defun authenticate-user (username-or-email password)
+  "Lookup user record and validate password. Returns two values:
+   1st value, was password correct T or NIL
+   2nd value, was user found, T or NIL
+Example:
+   (VALUES NIL NIL) -> user not found
+   (VALUES NIL T) -> user found, but wrong password
+   (VALUES T T) -> password correct"
+  (let ((password-hash (getf (find-user username-or-email) :password)))
+    (if password-hash 
+        (values (cl-pass:check-password password password-hash) t)
+        (values nil nil))))
+~~~~~~~~
+
+This is a bit more advanced, so let's look a bit closer. First we find the user and bind the password field to the local variable `password-hash`, if the value is not `nil`, such a user exists and we can check it's password, if not, no such user exists and the login fails. What's a bit more interesting here is the use of multiple return values. If you're new to lisp, this is one of the more unique features of the language. We have the ability to return more than one value. By default only the first is used, but since there is more than one way for this function to fail(wrong password and no such user) we want to add a bit of extra information in case we might need it to display an error message for example. Basically the first value tells you if the login succeeded or it failed, and the second value tells you if it failed because of a wrong password or a non-existent user.
+
+And that's it, that's our user model. We have everything we need for now. Let's move on.
+
+## Page model
+
+The basic idea of the page model is fairly simple. A page is identified by it's title, but it can have different versions. Only one of those versions is the latest though, and when a user edits a page, a new record is inserted into the database and is designated the latest version. This is a very simple model that will do just fine for our purposes. Let's look at the table definition:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=84}
+~~~~~~~~
+(defun create-page-table ()
+  "Create page table if it doesn't exist yet."
+  (with-connection (db)
+    (execute
+     (create-table (:page if-not-exists t)
+         ((id :type 'serial :primary-key t)
+          (title :type 'text :not-null t)
+          (author-id :type 'integer :not-null t)
+          (content :type 'text :not-null t)
+          (date :type 'timestamp :not-null t)
+          (latest :type 'boolean :not-null t)) ;; is this the latest version of the page
+       (foreign-key '(:author-id) :references '(:user :id))))))
+~~~~~~~~
+
+The fields `id`, `title` and `content` should be obvious by now, the `author-id` field is a foreign key to the user `id`, so it must be an integer. The `date` is a timestamp, I'll explain that in a bit. The last field `latest` is a bit more interesting. It's a binary flag that designates if the page is the last revision. This is to make lookup a bit easier, since most of the time we only need to see the latest version of an article. I'll explain that in a bit more detail in a bit as well. The last line is a table option that specifies that `author-id` is a foreign-key to the `user` table and the field `id`. now let's add a new page:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=97}
+~~~~~~~~
+(defun add-page (title author content)
+  "Add page to database. Mark it as \"latest: true\", mark previous \"latest: false\"."
+  (with-transaction (db)
+    (execute
+     (update :page
+       (set= :latest "false")
+       (where (:and
+               (:= :title title)
+               (:= :latest "true")))))
+    (execute
+     (insert-into :page
+       (set= :title title
+             :author-id (getf (find-user author) :id)
+             :content content
+             :date (local-time:now)
+             :latest "true")))))
+~~~~~~~~
+
+This is where the `with-transaction` macro comes into play. Since we can only have one `latest` version of a page, we need some way to simultaneously set the previous value to `"false"`, and insert a new "latest" version, without worrying that we'll mess up the database and end up with two new versions, or no new versions. This is done with an SQL transaction, it ensures that two queries will be executed as one so we don't have to worry about order. The first execute statement does an SQL update on the previous article with the same title and a `latest` value of `"true"`, and sets it to `"false"`. Next we insert a new row in the table, with a `latest` value of "true". We'll see how that's useful in the next function. Another thing to note is that the `date` field is given a value of `(local-time:now)`, this function creates a new timestamp for us. I'll go into more detail on how to deal with dates and time in Common Lisp in another chapter.
+
+Let's look at the rest of the functions, next up we need to find the latest version of an article:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=114}
+~~~~~~~~
+(defun get-latest-page (title)
+  "Get the latest version of a page by TITLE."
+  (with-connection (db)
+    (retrieve-one
+     (select :*
+       (from :page)
+       (where (:and (:= :title title)
+                    (:= :latest "true")))))))
+~~~~~~~~
+
+The query is relatively simple, we select the page with the title we want, and we ask for the latest version. This is much simpler that the alternative approach of sorting by the date and selecting the first result. 
+
+Now for a more complex query, this one has an implicit join:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=123}
+~~~~~~~~
+(defun get-latest-pages-by-user (username)
+  "Get the latest versions of all pages by USERNAME."
+  (with-connection (db)
+    (retrieve-all
+     (select (:page.id :title :username :content :date :latest)
+       (from :page :user)
+       (where (:and (:= :user.id :author-id)
+                    (:= :user.username username)
+                    (:= :latest "true")))))))
+~~~~~~~~
+
+Here we see a few features of SXQL we haven't seen before, namely selecting specific fields(instead of just using `:*`) and qualifying field names with their tables, for example, because user and page both have fields named `id` we need a way to distinguish between them, so we call them `:page.id` and `:user.id` respectively. This works automatically. We also select from more than one table. What we're doing here is we're telling PostgreSQL to join the tables together, and select those fields where the `author-id` and the `user.id` are equal for the user named with the variable `username` and we also want the latest versions of the articles. Notice how much more complex this query would have been if we had to sort all the articles and get the latest one ourselves. This is actually what the next function does, but in this case we want to get all the versions of a single article:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=133}
+~~~~~~~~
+(defun get-sorted-pages (title)
+  "Get all versions of a page by TITLE, sorted by it's timestamp in descending order, newest first."
+  (with-connection (db)
+    (retrieve-all
+     (select :*
+       (from :page)
+       (where (:= :title title))
+       (order-by (:desc :date))))))
+~~~~~~~~
+
+This is a fairly simple query, we select all the pages with the given title, and we order them by the date. The latest article will be of course the first result. If we want to know how many versions a page has without retrieving them all, we can use a query like this:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=142}
+~~~~~~~~
+(defun count-pages (title)
+  "Count the number of versions a page has."
+  (with-connection (db)
+    (getf (retrieve-one
+           (select (:title (:count :*))
+             (from :page)
+             (where (:= :title title))
+             (group-by :title)))
+          :count)))
+~~~~~~~~
+
+This one is a bit more complex. What we're doing here is were calling the `COUNT()` sql function on all rows and we're grouping them by title. Since there will be only one title, there will be one result returned. The result will look something like this: `(:title "foo" :count 3)` if the article named `foo` has 3 versions. We simply `getf` the count from that result and return it. Next up, if we want to get a specific revision of a page, we can now do this pretty easily:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=152}
+~~~~~~~~
+(defun nth-page-revision (title n)
+  "Get the nth version of a page, sorted by its DATE."
+  (nth n (get-sorted-pages title)))
+~~~~~~~~
+
+We simply get the nth element of the result returned by `get-sorted-pages`. The `(nth-page-revision "foo" 0)` will give us the latest version of course, even if that's a bit inefficient. 
+
+Finally we want a convenience function co create all of our tables for us:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=158}
+~~~~~~~~
+(defun create-tables ()
+  "Create all tables, if they don't exist already."
+  (create-user-table)
+  (create-page-table))
+~~~~~~~~
+
+And that's our database model. Now let's play around with it.
+
+## Playing with the model in the repl
+
+Go to the repl, load our project, go into the `fullstackwiki.model` package and create the tables:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (ql:quickload "fullstackwiki")
+
+* (in-package :fullstackwiki.model)
+
+* (create-tables)
+~~~~~~~~
+
+Now let's add a user and play around with it:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (add-user "fullstackwiki" "fullstackwiki@fullstackwiki.com" "this-is-a-password")
+
+* (find-user "fullstackwiki")
+=> (:ID 1 
+    :USERNAME "fullstackwiki" 
+    :EMAIL "fullstackwiki@fullstackwiki.com"
+    :PASSWORD "PBKDF2$SHA256:20000$e57a9bef3bb97ed3aff8d1c9d69d4f9f$bed1f429fc76ed95d8f6d729d10897ce4ea7a1b93cea93a6e4690af7305ccd23")
+
+* (find-user "fullstackwiki@fullstackwiki.com")
+=> (:ID 1 
+    :USERNAME "fullstackwiki" 
+    :EMAIL "fullstackwiki@fullstackwiki.com"
+    :PASSWORD "PBKDF2$SHA256:20000$e57a9bef3bb97ed3aff8d1c9d69d4f9f$bed1f429fc76ed95d8f6d729d10897ce4ea7a1b93cea93a6e4690af7305ccd23")
+~~~~~~~~
+
+Next up we'll try to authenticate it:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (authenticate-user "fullstackwiki" "this-is-a-password")
+=> T
+=> T
+~~~~~~~~
+Notice the two return values. Same works with the email:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (authenticate-user "fullstackwiki@fullstackwiki.com" "this-is-a-password")
+=> T
+=> T
+~~~~~~~~
+
+Now let's fail a few times:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (authenticate-user "No Such User" "this-is-a-password")
+=> NIL
+=> NIL
+~~~~~~~~
+
+notice the second value is also nil, so no user was found.
+
+{lang="common-lisp"}
+~~~~~~~~
+* (authenticate-user "fullstackwiki" "wrong password")
+=> NIL
+=> T
+~~~~~~~~
+
+Here the first value is nil, but the second value is T, because the username is correct, but the password is wrong. 
+
+Now let's create a few pages:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (add-page "page1" "fullstackwiki" "This is the first version")
+
+* (add-page "page1" "fullstackwiki" "This is the second versions")
+
+* (add-page "page1" "fullstackwiki" "This is the third version")
+
+* (add-page "page 2" "fullstackwiki" "This is the first version of page 2")
+
+* (add-page "page 2" "fullstackwiki" "This is the second version of page 2")
+~~~~~~~~
+
+Now let's query them a bit:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (get-latest-page "page1")
+=> (:ID 3 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the third version" :DATE 3673640374 :LATEST T)
+
+* (get-latest-page "page 2")
+=> (:ID 5 :TITLE "page 2" :AUTHOR-ID 1 :CONTENT "This is the second version of page 2" :DATE 3673640434 :LATEST T)
+~~~~~~~~
+
+Now let's get all the pages by our user:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (get-latest-pages-by-user "fullstackwiki")
+=>((:ID 3 :TITLE "page1" :USERNAME "fullstackwiki" :CONTENT "This is the third version" :DATE 3673640374 :LATEST T)
+   (:ID 5 :TITLE "page 2" :USERNAME "fullstackwiki" :CONTENT "This is the second version of page 2" :DATE 3673640434 :LATEST T))
+~~~~~~~~
+
+And all versions of `page1`:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (get-sorted-pages "page1")
+=> ((:ID 3 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the third version" :DATE 3673640374 :LATEST T)
+    (:ID 2 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the second versions" :DATE 3673640356 :LATEST NIL)
+    (:ID 1 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the first version" :DATE 3673640338 :LATEST NIL))
+~~~~~~~~
+
+Notice only the first one is the latest. Let's get the oldest one:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (nth-page-revision "page1" 2)
+=> (:ID 1 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the first version" :DATE 3673640338 :LATEST NIL)
+~~~~~~~~
+
+And now let's see how many are there:
+
+{lang="common-lisp"}
+~~~~~~~~
+* (count-pages "page1")
+=> 3
+* (count-pages "page 2")
+=> 2
+~~~~~~~~
+
+And that's it. This is our model. In this chapter we learned how to use a relational database with Common Lisp and implemented this simple schema so now we can continue with building our app. 
