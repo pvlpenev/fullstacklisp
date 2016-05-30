@@ -89,8 +89,7 @@ Now let's take a look at the `src/db.lisp` file:
                 :connect-cached)
   (:export :connection-settings
            :db
-           :with-connection
-           :with-transaction))
+           :with-connection))
 (in-package :fullstackwiki.db)
 
 (defun connection-settings (&optional (db :maindb))
@@ -319,11 +318,11 @@ Again, nothing we haven't seen before, we insert a new user row, but the passwor
 {lang="common-lisp"}
 ~~~~~~~~
 * (cl-pass:hash "hello")
-"PBKDF2$SHA256:20000$307629b11dd0f4df0c55c2b78f2f97a8$5213c150869544fc0a96e95d10d4a3157cd398ddeb4b3f128ebcaa90e6e50482"
+=> "PBKDF2$SHA256:20000$307629b11dd0f4df0c55c2b78f2f97a8$5213c150869544fc0a96e95d10d4a3157cd398ddeb4b3f128ebcaa90e6e50482"
 * (cl-pass:check-password "hello" *)
-T
+=> T
 * (cl-pass:check-password "wrong password" **)
-NIL
+=> NIL
 ~~~~~~~~
 
 Next, we need a way to retrieve a user:
@@ -353,7 +352,7 @@ This is the first time we see a clause other that `from` in an SXQL statement, i
 
 Now, since we'll want the user to be able to log in either with a username or with an email address, let's combine the two functions:
 
-{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=57}
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=64}
 ~~~~~~~~
 (defun find-user (username-or-email)
   "lookup user record by username or email."
@@ -599,10 +598,20 @@ Now let's query them a bit:
 {lang="common-lisp"}
 ~~~~~~~~
 * (get-latest-page "page1")
-=> (:ID 3 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the third version" :DATE 3673640374 :LATEST T)
+=> (:ID 3 
+    :TITLE "page1" 
+    :AUTHOR-ID 1 
+    :CONTENT "This is the third version"
+    :DATE 3673640374 
+    :LATEST T)
 
 * (get-latest-page "page 2")
-=> (:ID 5 :TITLE "page 2" :AUTHOR-ID 1 :CONTENT "This is the second version of page 2" :DATE 3673640434 :LATEST T)
+=> (:ID 5 
+    :TITLE "page 2" 
+    :AUTHOR-ID 1 
+    :CONTENT "This is the second version of page 2" 
+    :DATE 3673640434 
+    :LATEST T)
 ~~~~~~~~
 
 Now let's get all the pages by our user:
@@ -610,8 +619,18 @@ Now let's get all the pages by our user:
 {lang="common-lisp"}
 ~~~~~~~~
 * (get-latest-pages-by-user "fullstackwiki")
-=>((:ID 3 :TITLE "page1" :USERNAME "fullstackwiki" :CONTENT "This is the third version" :DATE 3673640374 :LATEST T)
-   (:ID 5 :TITLE "page 2" :USERNAME "fullstackwiki" :CONTENT "This is the second version of page 2" :DATE 3673640434 :LATEST T))
+=>((:ID 3 
+    :TITLE "page1" 
+    :USERNAME "fullstackwiki" 
+    :CONTENT "This is the third version" 
+    :DATE 3673640374 
+    :LATEST T)
+   (:ID 5 
+    :TITLE "page 2" 
+    :USERNAME "fullstackwiki" 
+    :CONTENT "This is the second version of page 2" 
+    :DATE 3673640434 
+    :LATEST T))
 ~~~~~~~~
 
 And all versions of `page1`:
@@ -619,9 +638,24 @@ And all versions of `page1`:
 {lang="common-lisp"}
 ~~~~~~~~
 * (get-sorted-pages "page1")
-=> ((:ID 3 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the third version" :DATE 3673640374 :LATEST T)
-    (:ID 2 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the second versions" :DATE 3673640356 :LATEST NIL)
-    (:ID 1 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the first version" :DATE 3673640338 :LATEST NIL))
+=> ((:ID 3 
+     :TITLE "page1" 
+     :AUTHOR-ID 1 
+     :CONTENT "This is the third version" 
+     :DATE 3673640374 
+     :LATEST T)
+    (:ID 2 
+     :TITLE "page1" 
+     :AUTHOR-ID 1 
+     :CONTENT "This is the second versions" 
+     :DATE 3673640356 
+     :LATEST NIL)
+    (:ID 1 
+     :TITLE "page1" 
+     :AUTHOR-ID 1 
+     :CONTENT "This is the first version" 
+     :DATE 3673640338 
+     :LATEST NIL))
 ~~~~~~~~
 
 Notice only the first one is the latest. Let's get the oldest one:
@@ -629,7 +663,12 @@ Notice only the first one is the latest. Let's get the oldest one:
 {lang="common-lisp"}
 ~~~~~~~~
 * (nth-page-revision "page1" 2)
-=> (:ID 1 :TITLE "page1" :AUTHOR-ID 1 :CONTENT "This is the first version" :DATE 3673640338 :LATEST NIL)
+=> (:ID 1 
+    :TITLE "page1" 
+    :AUTHOR-ID 1 
+    :CONTENT "This is the first version" 
+    :DATE 3673640338 
+    :LATEST NIL)
 ~~~~~~~~
 
 And now let's see how many are there:
