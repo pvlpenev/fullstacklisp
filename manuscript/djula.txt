@@ -1,0 +1,24 @@
+# Chapter 6: Putting the app together
+
+In this chapter we'll put our data model to good use. We'll implement a basic version for all the views and handlers for our app. 
+
+## Djula
+
+`Djula` is a template library that implements the Django template language. If you're not familiar with it, here are the basics. Everything in a `Djula` file is displayed as is, except for special tags, for example `{% for foo in some_list %}` is a `Djula` tag and that code gets compiled. Everything in double curly braces is a variable and it's value get's printed. For example if the variable foo has a value of "Hello", the following `Djula` code:
+
+~~~~~~~~
+The value of "foo" is {{foo}}
+~~~~~~~~
+
+would get compiled to:
+
+~~~~~~~~
+The value of "foo" is Hello
+~~~~~~~~
+
+The basic tags handle things like composing templates together, having for loops and and conditionals, as well as filters, essentially functions that transform variables prior to printing them. We'll see examples of all of these as we go along.
+
+It's a very simple template language and it's fairly easy to pick up. I'll explain some of the tags as we get to use them, but I encourage you to read the [documentation](https://mmontone.github.io/djula/doc/build/html/index.html).
+
+
+
