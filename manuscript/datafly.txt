@@ -272,6 +272,7 @@ Now we're almost all set. Let's create a new file called `src/model.lisp` and cr
            :authenticate-user
            :add-page
            :get-latest-page
+           :get-latest-pages-titles
            :get-latest-pages-by-user
            :get-sorted-pages
            :count-pages
@@ -442,9 +443,23 @@ Let's look at the rest of the functions, next up we need to find the latest vers
 
 The query is relatively simple, we select the page with the title we want, and we ask for the latest version. This is much simpler that the alternative approach of sorting by the date and selecting the first result. 
 
+We'll also need a list of all pages. The following query retrieves the titles of all pages labeled "latest" and sorts them by date:
+
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=124}
+~~~~~~~~
+(defun get-latest-pages-titles ()
+  "Get the titles of latest versions of pages"
+  (with-connection (db)
+    (retrieve-all
+     (select :title
+       (from :page)
+       (where (:= :latest "true"))
+       (order-by (:desc :date))))))
+~~~~~~~~
+
 Now for a more complex query, this one has an implicit join:
 
-{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=123}
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=133}
 ~~~~~~~~
 (defun get-latest-pages-by-user (username)
   "Get the latest versions of all pages by USERNAME."
@@ -459,7 +474,7 @@ Now for a more complex query, this one has an implicit join:
 
 Here we see a few features of SXQL we haven't seen before, namely selecting specific fields(instead of just using `:*`) and qualifying field names with their tables, for example, because user and page both have fields named `id` we need a way to distinguish between them, so we call them `:page.id` and `:user.id` respectively. This works automatically. We also select from more than one table. What we're doing here is we're telling PostgreSQL to join the tables together, and select those fields where the `author-id` and the `user.id` are equal for the user named with the variable `username` and we also want the latest versions of the articles. Notice how much more complex this query would have been if we had to sort all the articles and get the latest one ourselves. This is actually what the next function does, but in this case we want to get all the versions of a single article:
 
-{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=133}
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=143}
 ~~~~~~~~
 (defun get-sorted-pages (title)
   "Get all versions of a page by TITLE, sorted by it's timestamp in descending order, newest first."
@@ -473,7 +488,7 @@ Here we see a few features of SXQL we haven't seen before, namely selecting spec
 
 This is a fairly simple query, we select all the pages with the given title, and we order them by the date. The latest article will be of course the first result. If we want to know how many versions a page has without retrieving them all, we can use a query like this:
 
-{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=142}
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=152}
 ~~~~~~~~
 (defun count-pages (title)
   "Count the number of versions a page has."
@@ -488,7 +503,7 @@ This is a fairly simple query, we select all the pages with the given title, and
 
 This one is a bit more complex. What we're doing here is were calling the `COUNT()` sql function on all rows and we're grouping them by title. Since there will be only one title, there will be one result returned. The result will look something like this: `(:title "foo" :count 3)` if the article named `foo` has 3 versions. We simply `getf` the count from that result and return it. Next up, if we want to get a specific revision of a page, we can now do this pretty easily:
 
-{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=152}
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=162}
 ~~~~~~~~
 (defun nth-page-revision (title n)
   "Get the nth version of a page, sorted by its DATE."
@@ -499,7 +514,7 @@ We simply get the nth element of the result returned by `get-sorted-pages`. The 
 
 Finally we want a convenience function co create all of our tables for us:
 
-{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=158}
+{title="fullstackwiki/src/model.lisp", lang="common-lisp", starting-line-number=168}
 ~~~~~~~~
 (defun create-tables ()
   "Create all tables, if they don't exist already."

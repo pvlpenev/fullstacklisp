@@ -18,6 +18,7 @@
            :authenticate-user
            :add-page
            :get-latest-page
+           :get-latest-pages-titles
            :get-latest-pages-by-user
            :get-sorted-pages
            :count-pages
@@ -119,6 +120,15 @@ Example:
        (from :page)
        (where (:and (:= :title title)
                     (:= :latest "true")))))))
+
+(defun get-latest-pages-titles ()
+  "Get the titles of latest versions of pages"
+  (with-connection (db)
+    (retrieve-all
+     (select :title
+       (from :page)
+       (where (:= :latest "true"))
+       (order-by (:desc :date))))))
 
 (defun get-latest-pages-by-user (username)
   "Get the latest versions of all pages by USERNAME."
