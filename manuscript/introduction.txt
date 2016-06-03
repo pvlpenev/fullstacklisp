@@ -13,9 +13,9 @@ The following is a quick outline of some of the topics this book will cover:
 * Setting up a development environment
 * Web servers, Clack HTTP library and the various frameworks built on top of it.
 * Client side lisp
-    * Lispy HTML/CSS/JavaScript
-    * Using 3rd party APIs
-    * Desktop apps
+ * Lispy HTML/CSS/JavaScript
+ * Using 3rd party APIs
+ * Desktop apps
 * DBs and ORMs
 * Very basic security and crypto
 * Deployment and management 
